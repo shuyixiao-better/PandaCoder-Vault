@@ -22,7 +22,10 @@ const ReportDetail = () => {
     setLoading(true)
     try {
       const response = await reportService.getReportById(id)
-      if (response.success) {
+      console.log('获取周报详情响应:', response)
+
+      // 后端返回格式: { code: 200, message: "...", data: {...} }
+      if (response.code === 200 && response.data) {
         setReport(response.data)
       }
     } catch (error) {

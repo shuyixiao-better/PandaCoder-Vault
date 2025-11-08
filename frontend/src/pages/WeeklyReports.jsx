@@ -20,17 +20,23 @@ const WeeklyReports = () => {
     setLoading(true)
     try {
       const response = await reportService.getMyReports(page, size)
-      if (response.success) {
+      console.log('获取周报响应:', response)
+
+      // 后端返回格式: { code: 200, message: "...", data: { content, totalElements, number, size } }
+      if (response.code === 200 && response.data) {
         const { content, totalElements, number, size: pageSize } = response.data
-        setReports(content)
+        setReports(content || [])
         setPagination({
           current: number + 1,
           pageSize,
           total: totalElements
         })
+      } else {
+        message.error(response.message || '获取周报失败')
       }
     } catch (error) {
       console.error('获取周报失败:', error)
+      message.error('获取周报失败，请稍后重试')
     } finally {
       setLoading(false)
     }
@@ -51,12 +57,18 @@ const WeeklyReports = () => {
   const handleDelete = async (record) => {
     try {
       const response = await reportService.deleteReport(record.id)
-      if (response.success) {
-        message.success('删除成功')
+      console.log('删除周报响应:', response)
+
+      // 后端返回格式: { code: 200, message: "删除成功", data: null }
+      if (response.code === 200) {
+        message.success(response.message || '删除成功')
         fetchReports(pagination.current - 1, pagination.pageSize)
+      } else {
+        message.error(response.message || '删除失败')
       }
     } catch (error) {
       console.error('删除失败:', error)
+      message.error('删除失败，请稍后重试')
     }
   }
 
