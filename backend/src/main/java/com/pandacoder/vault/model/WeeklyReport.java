@@ -89,9 +89,10 @@ public class WeeklyReport {
     private Map<String, Object> metadata;
 
     /**
-     * 用户ID（关联到用户，用于多用户场景）
+     * 用户编码（关联到MySQL用户表的userCode字段）
+     * 用于多用户场景，关联用户基础信息
      * 注意：IDEA插件归档的数据可能没有这个字段，需要后续关联
      */
-    private String userId;
+    private String userCode;
 }
 

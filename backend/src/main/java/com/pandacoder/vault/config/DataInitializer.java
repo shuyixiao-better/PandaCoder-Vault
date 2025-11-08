@@ -1,14 +1,16 @@
 package com.pandacoder.vault.config;
 
-import com.pandacoder.vault.model.User;
-import com.pandacoder.vault.repository.UserRepository;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.pandacoder.vault.entity.User;
+import com.pandacoder.vault.mapper.UserMapper;
+import com.pandacoder.vault.util.RoleUtil;
+import com.pandacoder.vault.util.UserCodeGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -21,7 +23,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
 
-    private final UserRepository userRepository;
+    private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -34,9 +36,12 @@ public class DataInitializer implements CommandLineRunner {
      */
     private void initAdminUser() {
         String adminUsername = "admin";
-        
+
         // 检查管理员账号是否已存在
-        if (userRepository.existsByUsername(adminUsername)) {
+        Long count = userMapper.selectCount(
+                new LambdaQueryWrapper<User>().eq(User::getUsername, adminUsername)
+        );
+        if (count > 0) {
             log.info("管理员账号已存在，跳过初始化");
             return;
         }
@@ -48,22 +53,22 @@ public class DataInitializer implements CommandLineRunner {
 
         // 创建管理员用户
         User admin = User.builder()
+                .userCode(UserCodeGenerator.generate())
                 .username(adminUsername)
                 .email("admin@pandacoder.com")
                 .password(passwordEncoder.encode("admin123"))
                 .nickname("管理员")
-                .roles(roles)
+                .roles(RoleUtil.rolesToString(roles))
                 .enabled(true)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
                 .build();
 
-        userRepository.save(admin);
-        
+        userMapper.insert(admin);
+
         log.info("========================================");
         log.info("✅ 默认管理员账号创建成功！");
         log.info("用户名: admin");
         log.info("密码: admin123");
+        log.info("用户编码: {}", admin.getUserCode());
         log.info("⚠️  请在首次登录后立即修改密码！");
         log.info("========================================");
     }

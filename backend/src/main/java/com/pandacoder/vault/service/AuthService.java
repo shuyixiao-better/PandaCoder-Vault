@@ -1,12 +1,16 @@
 package com.pandacoder.vault.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.pandacoder.vault.dto.AuthResponse;
 import com.pandacoder.vault.dto.LoginRequest;
 import com.pandacoder.vault.dto.RegisterRequest;
-import com.pandacoder.vault.model.User;
-import com.pandacoder.vault.repository.UserRepository;
+import com.pandacoder.vault.entity.User;
+import com.pandacoder.vault.mapper.UserMapper;
 import com.pandacoder.vault.security.UserDetailsImpl;
 import com.pandacoder.vault.util.JwtUtil;
+import com.pandacoder.vault.util.RoleUtil;
+import com.pandacoder.vault.util.UserCodeGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -26,7 +30,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final UserRepository userRepository;
+    private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
@@ -36,12 +40,18 @@ public class AuthService {
      */
     public AuthResponse register(RegisterRequest request) {
         // 检查用户名是否已存在
-        if (userRepository.existsByUsername(request.getUsername())) {
+        Long usernameCount = userMapper.selectCount(
+                new LambdaQueryWrapper<User>().eq(User::getUsername, request.getUsername())
+        );
+        if (usernameCount > 0) {
             throw new RuntimeException("用户名已存在");
         }
 
         // 检查邮箱是否已存在
-        if (userRepository.existsByEmail(request.getEmail())) {
+        Long emailCount = userMapper.selectCount(
+                new LambdaQueryWrapper<User>().eq(User::getEmail, request.getEmail())
+        );
+        if (emailCount > 0) {
             throw new RuntimeException("邮箱已被注册");
         }
 
@@ -50,17 +60,16 @@ public class AuthService {
         roles.add("USER");
 
         User user = User.builder()
+                .userCode(UserCodeGenerator.generate())
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .nickname(request.getNickname() != null ? request.getNickname() : request.getUsername())
-                .roles(roles)
+                .roles(RoleUtil.rolesToString(roles))
                 .enabled(true)
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
                 .build();
 
-        user = userRepository.save(user);
+        userMapper.insert(user);
 
         // 生成JWT token
         UserDetailsImpl userDetails = UserDetailsImpl.build(user);
@@ -69,12 +78,12 @@ public class AuthService {
         return AuthResponse.builder()
                 .token(token)
                 .type("Bearer")
-                .id(user.getId())
+                .id(String.valueOf(user.getId()))
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .nickname(user.getNickname())
                 .avatar(user.getAvatar())
-                .roles(user.getRoles())
+                .roles(RoleUtil.stringToRoles(user.getRoles()))
                 .build();
     }
 
@@ -97,10 +106,17 @@ public class AuthService {
         String token = jwtUtil.generateToken(userDetails);
 
         // 更新最后登录时间
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("用户不存在"));
-        user.setLastLoginAt(LocalDateTime.now());
-        userRepository.save(user);
+        User user = userMapper.selectOne(
+                new LambdaQueryWrapper<User>().eq(User::getUsername, request.getUsername())
+        );
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+
+        userMapper.update(null, new LambdaUpdateWrapper<User>()
+                .eq(User::getId, user.getId())
+                .set(User::getLastLoginAt, LocalDateTime.now())
+        );
 
         return AuthResponse.builder()
                 .token(token)

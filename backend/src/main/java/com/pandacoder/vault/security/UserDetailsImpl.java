@@ -1,6 +1,7 @@
 package com.pandacoder.vault.security;
 
-import com.pandacoder.vault.model.User;
+import com.pandacoder.vault.entity.User;
+import com.pandacoder.vault.util.RoleUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;
@@ -25,12 +26,12 @@ public class UserDetailsImpl implements UserDetails {
     private Boolean enabled;
 
     public static UserDetailsImpl build(User user) {
-        Collection<GrantedAuthority> authorities = user.getRoles().stream()
+        Collection<GrantedAuthority> authorities = RoleUtil.stringToRoles(user.getRoles()).stream()
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
                 .collect(Collectors.toList());
 
         return new UserDetailsImpl(
-                user.getId(),
+                String.valueOf(user.getId()),
                 user.getUsername(),
                 user.getEmail(),
                 user.getPassword(),

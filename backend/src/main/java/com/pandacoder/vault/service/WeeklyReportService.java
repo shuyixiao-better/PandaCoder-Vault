@@ -1,5 +1,8 @@
 package com.pandacoder.vault.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.pandacoder.vault.entity.User;
+import com.pandacoder.vault.mapper.UserMapper;
 import com.pandacoder.vault.model.WeeklyReport;
 import com.pandacoder.vault.repository.WeeklyReportRepository;
 import com.pandacoder.vault.security.UserDetailsImpl;
@@ -23,6 +26,7 @@ import java.util.List;
 public class WeeklyReportService {
 
     private final WeeklyReportRepository weeklyReportRepository;
+    private final UserMapper userMapper;
 
     /**
      * 获取当前登录用户ID
@@ -36,12 +40,26 @@ public class WeeklyReportService {
     }
 
     /**
+     * 获取当前登录用户的用户编码
+     */
+    private String getCurrentUserCode() {
+        String userId = getCurrentUserId();
+        User user = userMapper.selectOne(
+                new LambdaQueryWrapper<User>().eq(User::getId, Long.parseLong(userId))
+        );
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        return user.getUserCode();
+    }
+
+    /**
      * 获取当前用户的周报列表（分页）
      */
     public Page<WeeklyReport> getMyReports(int page, int size) {
-        String userId = getCurrentUserId();
+        String userCode = getCurrentUserCode();
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "generatedTime"));
-        return weeklyReportRepository.findByUserId(userId, pageable);
+        return weeklyReportRepository.findByUserCode(userCode, pageable);
     }
 
     /**
@@ -52,8 +70,8 @@ public class WeeklyReportService {
                 .orElseThrow(() -> new RuntimeException("周报不存在"));
 
         // 验证权限：只能查看自己的周报
-        String userId = getCurrentUserId();
-        if (report.getUserId() != null && !report.getUserId().equals(userId)) {
+        String userCode = getCurrentUserCode();
+        if (report.getUserCode() != null && !report.getUserCode().equals(userCode)) {
             throw new RuntimeException("无权访问此周报");
         }
 
@@ -64,8 +82,8 @@ public class WeeklyReportService {
      * 根据日期范围查询周报
      */
     public List<WeeklyReport> getReportsByDateRange(LocalDate startDate, LocalDate endDate) {
-        String userId = getCurrentUserId();
-        return weeklyReportRepository.findByUserIdAndWeekStartDateBetween(userId, startDate, endDate);
+        String userCode = getCurrentUserCode();
+        return weeklyReportRepository.findByUserCodeAndWeekStartDateBetween(userCode, startDate, endDate);
     }
 
     /**
@@ -80,16 +98,16 @@ public class WeeklyReportService {
      * 获取所有未关联用户的周报（用于数据迁移）
      */
     public List<WeeklyReport> getUnassignedReports() {
-        return weeklyReportRepository.findByUserIdIsNull();
+        return weeklyReportRepository.findByUserCodeIsNull();
     }
 
     /**
      * 关联周报到用户（用于数据迁移）
      */
-    public void assignReportToUser(String reportId, String userId) {
+    public void assignReportToUser(String reportId, String userCode) {
         WeeklyReport report = weeklyReportRepository.findById(reportId)
                 .orElseThrow(() -> new RuntimeException("周报不存在"));
-        report.setUserId(userId);
+        report.setUserCode(userCode);
         weeklyReportRepository.save(report);
     }
 }

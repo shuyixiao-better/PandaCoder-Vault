@@ -1,7 +1,8 @@
 package com.pandacoder.vault.security;
 
-import com.pandacoder.vault.model.User;
-import com.pandacoder.vault.repository.UserRepository;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.pandacoder.vault.entity.User;
+import com.pandacoder.vault.mapper.UserMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -15,12 +16,17 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class UserDetailsServiceImpl implements UserDetailsService {
 
-    private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("用户不存在: " + username));
+        User user = userMapper.selectOne(
+                new LambdaQueryWrapper<User>().eq(User::getUsername, username)
+        );
+
+        if (user == null) {
+            throw new UsernameNotFoundException("用户不存在: " + username);
+        }
 
         return UserDetailsImpl.build(user);
     }
