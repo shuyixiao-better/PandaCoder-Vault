@@ -74,10 +74,20 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        // 允许的域名
+        configuration.setAllowedOrigins(Arrays.asList(
+                "https://www.poeticcoder.com",  // 生产域名
+                "http://localhost:8888",         // Netlify Dev 本地测试
+                "http://localhost:5173",         // VitePress 本地开发
+                "http://localhost:3000"          // 其他本地开发端口
+        ));
+        // 允许的请求方法
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        // 允许的请求头
         configuration.setAllowedHeaders(List.of("*"));
+        // 允许携带凭证（如 Cookie）
         configuration.setAllowCredentials(true);
+        // 预检请求的有效期（秒）
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
