@@ -1,0 +1,140 @@
+version: '3.8'
+
+services:
+  # ================================
+  # 后端服务
+  # ================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pandacoder-vault-backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # MySQL 配置
+      MYSQL_HOST: ${MYSQL_HOST:-mysql}
+      MYSQL_PORT: ${MYSQL_PORT:-3306}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-PandaCoder}
+      MYSQL_USERNAME: ${MYSQL_USERNAME:-root}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-root}
+      
+      # MongoDB 配置
+      MONGODB_HOST: ${MONGODB_HOST:-mongodb}
+      MONGODB_PORT: ${MONGODB_PORT:-27017}
+      MONGODB_DATABASE: ${MONGODB_DATABASE:-PandaCoder}
+      MONGODB_USERNAME: ${MONGODB_USERNAME:-admin}
+      MONGODB_PASSWORD: ${MONGODB_PASSWORD:-admin}
+      MONGODB_AUTH_DATABASE: ${MONGODB_AUTH_DATABASE:-admin}
+      
+      # JWT 配置
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this-in-production}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      
+      # 服务器配置
+      SERVER_PORT: 8080
+      
+      # JVM 配置
+      JAVA_OPTS: "-Xms512m -Xmx1024m"
+    networks:
+      - pandacoder-network
+    depends_on:
+      - mongodb
+      - mysql
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/auth/test"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ================================
+  # 前端服务
+  # ================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pandacoder-vault-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    networks:
+      - pandacoder-network
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ================================
+  # MongoDB 数据库（可选）
+  # ================================
+  mongodb:
+    image: mongo:7.0
+    container_name: pandacoder-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:-admin}
+      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE:-PandaCoder}
+    volumes:
+      - mongodb-data:/data/db
+      - mongodb-config:/data/configdb
+    networks:
+      - pandacoder-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ================================
+  # MySQL 数据库（可选）
+  # ================================
+  mysql:
+    image: mysql:8.0
+    container_name: pandacoder-mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-PandaCoder}
+      MYSQL_USER: ${MYSQL_USERNAME:-pandacoder}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-pandacoder}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - pandacoder-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# ================================
+# 网络配置
+# ================================
+networks:
+  pandacoder-network:
+    driver: bridge
+
+# ================================
+# 数据卷配置
+# ================================
+volumes:
+  mongodb-data:
+    driver: local
+  mongodb-config:
+    driver: local
+  mysql-data:
+    driver: local
+
