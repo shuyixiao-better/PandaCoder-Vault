@@ -3,6 +3,7 @@ package com.pandacoder.vault.config;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.pandacoder.vault.entity.User;
 import com.pandacoder.vault.mapper.UserMapper;
+import com.pandacoder.vault.util.DeviceIdentifierUtil;
 import com.pandacoder.vault.util.RoleUtil;
 import com.pandacoder.vault.util.UserCodeGenerator;
 import lombok.RequiredArgsConstructor;
@@ -51,9 +52,13 @@ public class DataInitializer implements CommandLineRunner {
         roles.add("ADMIN");
         roles.add("USER");
 
+        // 生成设备唯一标识 根据设备ID生成用户编码（取前12位）
+        String deviceId = DeviceIdentifierUtil.getDeviceId().length() >= 12 ?
+                DeviceIdentifierUtil.getDeviceId().substring(0, 12).toUpperCase() : DeviceIdentifierUtil.getDeviceId().toUpperCase();
         // 创建管理员用户
         User admin = User.builder()
                 .userCode(UserCodeGenerator.generate())
+                .deviceId(deviceId)
                 .username(adminUsername)
                 .email("admin@pandacoder.com")
                 .password(passwordEncoder.encode("admin123"))
@@ -69,6 +74,7 @@ public class DataInitializer implements CommandLineRunner {
         log.info("用户名: admin");
         log.info("密码: admin123");
         log.info("用户编码: {}", admin.getUserCode());
+        log.info("设备ID: {}", admin.getDeviceId());
         log.info("⚠️  请在首次登录后立即修改密码！");
         log.info("========================================");
     }

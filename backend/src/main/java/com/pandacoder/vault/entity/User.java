@@ -32,6 +32,13 @@ public class User {
     private String userCode;
 
     /**
+     * 设备唯一标识（基于MAC地址的SHA-256哈希值）
+     * 用于区分不同设备的用户，查询周报数据时使用
+     */
+    @TableField("device_id")
+    private String deviceId;
+
+    /**
      * 用户名（唯一）
      */
     @TableField("username")

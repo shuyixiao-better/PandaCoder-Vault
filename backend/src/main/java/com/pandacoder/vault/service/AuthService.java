@@ -8,6 +8,7 @@ import com.pandacoder.vault.dto.RegisterRequest;
 import com.pandacoder.vault.entity.User;
 import com.pandacoder.vault.mapper.UserMapper;
 import com.pandacoder.vault.security.UserDetailsImpl;
+import com.pandacoder.vault.util.DeviceIdentifierUtil;
 import com.pandacoder.vault.util.JwtUtil;
 import com.pandacoder.vault.util.RoleUtil;
 import com.pandacoder.vault.util.UserCodeGenerator;
@@ -59,8 +60,13 @@ public class AuthService {
         Set<String> roles = new HashSet<>();
         roles.add("USER");
 
+        // 生成设备唯一标识
+        String deviceId = DeviceIdentifierUtil.getDeviceId().length() >= 12 ?
+                DeviceIdentifierUtil.getDeviceId().substring(0, 12).toUpperCase() : DeviceIdentifierUtil.getDeviceId().toUpperCase();
+
         User user = User.builder()
                 .userCode(UserCodeGenerator.generate())
+                .deviceId(deviceId)
                 .username(request.getUsername())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
@@ -105,7 +111,7 @@ public class AuthService {
         UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
         String token = jwtUtil.generateToken(userDetails);
 
-        // 更新最后登录时间
+        // 更新最后登录时间和设备ID
         User user = userMapper.selectOne(
                 new LambdaQueryWrapper<User>().eq(User::getUsername, request.getUsername())
         );
@@ -113,9 +119,14 @@ public class AuthService {
             throw new RuntimeException("用户不存在");
         }
 
+        // 生成设备唯一标识
+        String deviceId = DeviceIdentifierUtil.getDeviceId().length() >= 12 ?
+                DeviceIdentifierUtil.getDeviceId().substring(0, 12).toUpperCase() : DeviceIdentifierUtil.getDeviceId().toUpperCase();
+
         userMapper.update(null, new LambdaUpdateWrapper<User>()
                 .eq(User::getId, user.getId())
                 .set(User::getLastLoginAt, LocalDateTime.now())
+                .set(User::getDeviceId, deviceId)
         );
 
         return AuthResponse.builder()

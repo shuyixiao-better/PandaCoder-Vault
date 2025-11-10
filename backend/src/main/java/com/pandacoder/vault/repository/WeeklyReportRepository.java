@@ -16,9 +16,9 @@ import java.util.List;
 public interface WeeklyReportRepository extends MongoRepository<WeeklyReport, String> {
 
     /**
-     * 根据用户编码查找周报（分页）
+     * 根据设备ID查找周报（分页）
      */
-    Page<WeeklyReport> findByUserCode(String userCode, Pageable pageable);
+    Page<WeeklyReport> findByDeviceId(String deviceId, Pageable pageable);
 
     /**
      * 根据项目名称查找周报
@@ -31,13 +31,13 @@ public interface WeeklyReportRepository extends MongoRepository<WeeklyReport, St
     List<WeeklyReport> findByWeekStartDateBetween(LocalDate startDate, LocalDate endDate);
 
     /**
-     * 根据用户编码和日期范围查找周报
+     * 根据设备ID和日期范围查找周报
      */
-    List<WeeklyReport> findByUserCodeAndWeekStartDateBetween(String userCode, LocalDate startDate, LocalDate endDate);
+    List<WeeklyReport> findByDeviceIdAndWeekStartDateBetween(String deviceId, LocalDate startDate, LocalDate endDate);
 
     /**
-     * 查找所有周报（用于初始数据关联）
+     * 查找所有未关联设备的周报（用于初始数据关联）
      */
-    List<WeeklyReport> findByUserCodeIsNull();
+    List<WeeklyReport> findByDeviceIdIsNull();
 }
 

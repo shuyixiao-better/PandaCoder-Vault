@@ -10,6 +10,7 @@ USE `PandaCoder`;
 CREATE TABLE IF NOT EXISTS `users` (
                                        `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
                                        `user_code` VARCHAR(50) NOT NULL COMMENT '用户编码（唯一标识，用于关联MongoDB文档）',
+    `device_id` VARCHAR(64) DEFAULT NULL COMMENT '设备唯一标识（基于MAC地址的SHA-256哈希值）',
     `username` VARCHAR(50) NOT NULL COMMENT '用户名',
     `email` VARCHAR(100) NOT NULL COMMENT '邮箱',
     `password` VARCHAR(255) NOT NULL COMMENT '密码（BCrypt加密）',
@@ -26,6 +27,7 @@ CREATE TABLE IF NOT EXISTS `users` (
     UNIQUE KEY `uk_username` (`username`),
     UNIQUE KEY `uk_email` (`email`),
     KEY `idx_enabled` (`enabled`),
-    KEY `idx_deleted` (`deleted`)
+    KEY `idx_deleted` (`deleted`),
+    KEY `idx_device_id` (`device_id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 

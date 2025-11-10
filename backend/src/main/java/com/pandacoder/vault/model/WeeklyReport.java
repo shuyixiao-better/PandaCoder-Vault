@@ -89,10 +89,11 @@ public class WeeklyReport {
     private Map<String, Object> metadata;
 
     /**
-     * 用户编码（关联到MySQL用户表的userCode字段）
+     * 设备唯一标识（基于MAC地址的SHA-256哈希值）
+     * 用于区分不同设备的用户，关联到MySQL用户表的deviceId字段
      * 用于多用户场景，关联用户基础信息
      * 注意：IDEA插件归档的数据可能没有这个字段，需要后续关联
      */
-    private String userCode;
+    private String deviceId;
 }
 

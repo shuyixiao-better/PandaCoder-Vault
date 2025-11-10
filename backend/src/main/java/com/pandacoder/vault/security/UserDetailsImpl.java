@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 public class UserDetailsImpl implements UserDetails {
 
     private String id;
+    private String deviceId;
     private String username;
     private String email;
     private String password;
@@ -32,6 +33,7 @@ public class UserDetailsImpl implements UserDetails {
 
         return new UserDetailsImpl(
                 String.valueOf(user.getId()),
+                user.getDeviceId(),
                 user.getUsername(),
                 user.getEmail(),
                 user.getPassword(),
