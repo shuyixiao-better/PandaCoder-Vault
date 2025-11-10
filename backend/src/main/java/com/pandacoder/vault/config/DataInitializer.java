@@ -53,8 +53,7 @@ public class DataInitializer implements CommandLineRunner {
         roles.add("USER");
 
         // 生成设备唯一标识 根据设备ID生成用户编码（取前12位）
-        String deviceId = DeviceIdentifierUtil.getDeviceId().length() >= 12 ?
-                DeviceIdentifierUtil.getDeviceId().substring(0, 12).toUpperCase() : DeviceIdentifierUtil.getDeviceId().toUpperCase();
+        String deviceId = DeviceIdentifierUtil.getDeviceId();
         // 创建管理员用户
         User admin = User.builder()
                 .userCode(UserCodeGenerator.generate())

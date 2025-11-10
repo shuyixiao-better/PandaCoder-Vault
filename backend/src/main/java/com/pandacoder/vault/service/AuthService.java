@@ -57,8 +57,7 @@ public class AuthService {
         }
 
         // 生成设备唯一标识
-        String deviceId = DeviceIdentifierUtil.getDeviceId().length() >= 12 ?
-                DeviceIdentifierUtil.getDeviceId().substring(0, 12).toUpperCase() : DeviceIdentifierUtil.getDeviceId().toUpperCase();
+        String deviceId = DeviceIdentifierUtil.getDeviceId();
         // 验证编码是否存在
         Long deviceIdCount = userMapper.selectCount(
                 new LambdaQueryWrapper<User>().eq(User::getDeviceId, deviceId)
