@@ -56,13 +56,20 @@ public class AuthService {
             throw new RuntimeException("邮箱已被注册");
         }
 
-        // 创建新用户
-        Set<String> roles = new HashSet<>();
-        roles.add("USER");
-
         // 生成设备唯一标识
         String deviceId = DeviceIdentifierUtil.getDeviceId().length() >= 12 ?
                 DeviceIdentifierUtil.getDeviceId().substring(0, 12).toUpperCase() : DeviceIdentifierUtil.getDeviceId().toUpperCase();
+        // 验证编码是否存在
+        Long deviceIdCount = userMapper.selectCount(
+                new LambdaQueryWrapper<User>().eq(User::getDeviceId, deviceId)
+        );
+        if (deviceIdCount > 0) {
+            throw new RuntimeException("当前设备已经存在用户不允许重复注册");
+        }
+
+        // 创建新用户
+        Set<String> roles = new HashSet<>();
+        roles.add("USER");
 
         User user = User.builder()
                 .userCode(UserCodeGenerator.generate())
