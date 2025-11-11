@@ -77,6 +77,7 @@ public class SecurityConfig {
         // 允许的域名
         configuration.setAllowedOrigins(Arrays.asList(
                 "https://www.poeticcoder.com",  // 生产域名
+                "https://www.poeticcoder.cn",  // 生产域名
                 "http://localhost:8888",         // Netlify Dev 本地测试
                 "http://localhost:5173",         // VitePress 本地开发
                 "http://localhost:3000"          // 其他本地开发端口
