@@ -19,7 +19,8 @@ const Login = () => {
       // 后端返回格式: { code: 200, message: "登录成功", data: { token, username, email, ... } }
       if (response.code === 200 && response.data) {
         const { token, ...userData } = response.data
-        auth.setToken(token)
+        // 设置token，默认24小时过期
+        auth.setToken(token, 86400000) // 24小时，单位毫秒
         auth.setUser(userData)
         message.success(response.message || '登录成功！')
         navigate('/')

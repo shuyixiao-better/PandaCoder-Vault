@@ -44,9 +44,9 @@ request.interceptors.response.use(
       
       switch (status) {
         case 401:
-          message.error('未授权，请重新登录')
-          auth.logout()
-          window.location.href = '/login'
+          message.error('登录已过期，请重新登录')
+          // 使用增强的跳转方法
+          auth.redirectToLogin()
           break
         case 403:
           message.error('拒绝访问')
