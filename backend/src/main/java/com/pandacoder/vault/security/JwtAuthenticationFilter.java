@@ -37,24 +37,48 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
         try {
             String jwt = parseJwt(request);
-            if (jwt != null && jwtUtil.validateToken(jwt)) {
-                String username = jwtUtil.getUsernameFromToken(jwt);
+            if (jwt != null) {
+                // 如果token有效，设置认证信息
+                if (jwtUtil.validateToken(jwt)) {
+                    String username = jwtUtil.getUsernameFromToken(jwt);
 
-                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities());
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities());
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                } else {
+                    // token无效（包括过期）
+                    sendUnauthorizedResponse(response, "Token无效或已过期，请重新登录");
+                    return;
+                }
             }
         } catch (Exception e) {
-            logger.error("Cannot set user authentication: {}", e.getMessage());
+            logger.error("JWT token validation error: {}", e.getMessage());
+            // 如果是JWT过期错误，返回401
+            String errorMessage = "Token验证失败，请重新登录";
+            if (e.getMessage() != null && e.getMessage().contains("JWT expired")) {
+                errorMessage = "Token已过期，请重新登录";
+            }
+            sendUnauthorizedResponse(response, errorMessage);
+            return;
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * 发送401未授权响应
+     */
+    private void sendUnauthorizedResponse(HttpServletResponse response, String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter().write(String.format("{\"code\":401,\"message\":\"%s\"}", message));
     }
 
     /**

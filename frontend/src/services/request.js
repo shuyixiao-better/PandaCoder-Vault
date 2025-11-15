@@ -28,6 +28,13 @@ request.interceptors.response.use(
   (response) => {
     const res = response.data
     
+    // 检查业务状态码，如果是401也表示需要重新登录
+    if (res.code === 401) {
+      message.error(res.message || '登录已过期，请重新登录')
+      auth.redirectToLogin()
+      return Promise.reject(new Error(res.message || '登录已过期'))
+    }
+    
     // 如果返回的状态码不是 200，则认为是错误
     if (response.status !== 200) {
       message.error(res.message || '请求失败')
@@ -49,7 +56,14 @@ request.interceptors.response.use(
           auth.redirectToLogin()
           break
         case 403:
-          message.error('拒绝访问')
+          // 检查是否是JWT过期导致的403
+          if (data && (data.message && data.message.includes('JWT expired') || 
+                       data.message && data.message.includes('Token已过期'))) {
+            message.error('登录已过期，请重新登录')
+            auth.redirectToLogin()
+          } else {
+            message.error('拒绝访问')
+          }
           break
         case 404:
           message.error('请求的资源不存在')
